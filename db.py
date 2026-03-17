@@ -8,33 +8,36 @@ def get_connection():
     # timeout=20 prevents "Database is locked" errors
     return sqlite3.connect(DB_NAME, timeout=20)
 
+
 def init_db():
     with get_connection() as conn:
         cursor = conn.cursor()
-        # Categories
+
+        # 1. Standard table creation
         cursor.execute('''CREATE TABLE IF NOT EXISTS categories 
                           (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)''')
-        # Levels
         cursor.execute('''CREATE TABLE IF NOT EXISTS levels 
                           (id INTEGER PRIMARY KEY AUTOINCREMENT, category_id INTEGER, name TEXT NOT NULL)''')
-        # Lessons
         cursor.execute('''CREATE TABLE IF NOT EXISTS lessons 
                           (id INTEGER PRIMARY KEY AUTOINCREMENT, level_id INTEGER, name TEXT NOT NULL, 
-                           video_id TEXT, code TEXT)''')
-        # Users (Lockout and Registry)
-        #Users (Updated with all columns)
+                           content_id TEXT, code TEXT)''')  # video_id renamed to content_id in Step 34
         cursor.execute('''CREATE TABLE IF NOT EXISTS users 
-                           (user_id INTEGER PRIMARY KEY, 
-                           locked_until REAL DEFAULT 0, 
-                           referrer_id INTEGER,
-                           invited_count INTEGER DEFAULT 0,
-                           free_passes INTEGER DEFAULT 0)''')
-        # Channels
+                          (user_id INTEGER PRIMARY KEY, locked_until REAL DEFAULT 0, referrer_id INTEGER,
+                           invited_count INTEGER DEFAULT 0, free_passes INTEGER DEFAULT 0)''')
         cursor.execute('''CREATE TABLE IF NOT EXISTS channels 
                           (id INTEGER PRIMARY KEY AUTOINCREMENT, channel_id TEXT NOT NULL, url TEXT NOT NULL)''')
-        # Unlocked Lessons
         cursor.execute('''CREATE TABLE IF NOT EXISTS unlocked_lessons 
                           (user_id INTEGER, lesson_id INTEGER, PRIMARY KEY(user_id, lesson_id))''')
+
+        # 2. SCHEMA MIGRATION (The Fix)
+        # This part checks if 'content_type' exists, and adds it if it's missing
+        try:
+            cursor.execute('ALTER TABLE lessons ADD COLUMN content_type TEXT DEFAULT "video"')
+            print("✅ Column 'content_type' added to lessons table.")
+        except Exception:
+            # If it already exists, SQLite will throw an error, we just ignore it
+            pass
+
         conn.commit()
 
 # --- 2. GETTER FUNCTIONS (Fetch Data) ---
@@ -125,7 +128,9 @@ def add_level(category_id, name):
 def add_lesson(level_id, name, code):
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO lessons (level_id, name, code, content_type) VALUES (?, ?, ?, 'text')", (level_id, name, code))
+        # Ensure we are using the 4 columns: level_id, name, code, content_type
+        cursor.execute("INSERT INTO lessons (level_id, name, code, content_type) VALUES (?, ?, ?, 'text')",
+                       (level_id, name, code))
         last_id = cursor.lastrowid
         conn.commit()
         return last_id
