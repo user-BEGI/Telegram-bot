@@ -185,8 +185,13 @@ def get_user_rewards(user_id):
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT invited_count, free_passes FROM users WHERE user_id = ?", (user_id,))
-        return cursor.fetchone()  # Returns (count, passes)
+        result = cursor.fetchone()
 
+        # THE FIX: If result is None, return zeros instead of None
+        if result:
+            return result
+        else:
+            return (0, 0)
 
 def use_free_pass(user_id):
     with get_connection() as conn:
