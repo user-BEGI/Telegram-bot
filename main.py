@@ -8,7 +8,7 @@ from aiogram.filters.command import Command
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest
-
+from db import init_db # Add this to your imports
 # Import your database functions
 from db import (get_categories, get_levels, get_lessons,
                 get_lesson_details, set_user_lockout,
@@ -608,10 +608,13 @@ async def set_commands(bot: Bot):
 
 
 async def main():
+    # NEW: Build the database tables automatically on the server
+    init_db()
+
+    # Set the blue menu button commands
     await set_commands(bot)
+
     print("Bot is starting...")
     await dp.start_polling(bot)
-
-
 if __name__ == "__main__":
     asyncio.run(main())
