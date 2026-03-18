@@ -620,7 +620,7 @@ async def cmd_invite(callback: types.CallbackQuery):
     current_progress, passes = get_user_rewards(callback.from_user.id)
     bot_info = await bot.get_me()
     link = f"https://t.me/{bot_info.username}?start={callback.from_user.id}"
-    msg = f"👥 **Referral Program**\nInvited: {total_invited}\nProgress: {current_progress}/5\nPasses: 🎫  **{passes}** \nLink: `{link}`"
+    msg = f"👥 **Referral Program**\nInvited: {total_invited}\nProgress: {current_progress}/1\nPasses: 🎫  **{passes}** \nLink: `{link}`"
     try:
         await callback.message.edit_text(msg, parse_mode="Markdown", reply_markup=main_menu_keyboard())
     except TelegramBadRequest:
