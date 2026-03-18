@@ -162,11 +162,11 @@ async def admin_reply(message: types.Message):
     try:
         parts = message.text.split(maxsplit=2)
         if len(parts) < 3:
-            await message.answer("❌ Usage: `/reply USER_ID message`", parse_mode="Markdown")
+            await message.answer("❌ Usage: `/reply USER_ID message` ", parse_mode="Markdown")
             return
         target_id, reply_text = parts[1], parts[2]
-        await bot.send_message(target_id, f"✉️ **Message from Admin:**\n\n{reply_text}", parse_mode="Markdown")
-        await message.answer(f"✅ Reply sent to `{target_id}`")
+        await bot.send_message(target_id, f"✉️  **Message from Admin:** \n\n{reply_text}", parse_mode="Markdown")
+        await message.answer(f"✅ Reply sent to  `{target_id}` ")
     except Exception as e:
         await message.answer(f"❌ Error: {e}")
 
@@ -186,7 +186,7 @@ async def back_to_admin(callback: types.CallbackQuery, state: FSMContext):
 async def admin_give_pass_start(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
     await state.set_state(AdminStates.waiting_for_pass_user_id)
-    await callback.message.answer("Step 1: Enter the **User ID** you want to reward:")
+    await callback.message.answer("Step 1: Enter the  **User ID**  you want to reward:")
 
 
 @dp.message(AdminStates.waiting_for_pass_user_id)
@@ -196,7 +196,7 @@ async def admin_process_pass_id(message: types.Message, state: FSMContext):
         return
     await state.update_data(target_user_id=int(message.text))
     await state.set_state(AdminStates.waiting_for_pass_amount)
-    await message.answer(f"Step 2: How many passes for `{message.text}`?")
+    await message.answer(f"Step 2: How many passes for  `{message.text}` ?")
 
 
 @dp.message(AdminStates.waiting_for_pass_amount)
@@ -207,9 +207,9 @@ async def admin_process_pass_amount(message: types.Message, state: FSMContext):
     amount = int(message.text)
     data = await state.get_data()
     add_free_passes(data['target_user_id'], amount)
-    await message.answer(f"✅ Added {amount} passes to `{data['target_user_id']}`.", reply_markup=admin_main_keyboard())
+    await message.answer(f"✅ Added {amount} passes to  `{data['target_user_id']}` .", reply_markup=admin_main_keyboard())
     try:
-        await bot.send_message(data['target_user_id'], f"🎁 Admin gifted you **{amount} Free Pass(es)**!",
+        await bot.send_message(data['target_user_id'], f"🎁 Admin gifted you  **{amount} Free Pass(es)** !",
                                parse_mode="Markdown")
     except Exception:
         pass
@@ -260,7 +260,7 @@ async def admin_ask_lsn_content(message: types.Message, state: FSMContext):
     lsn_id = add_lesson(data['lvl_id'], data['lsn_name'], message.text)
     await state.update_data(lsn_id=lsn_id)
     await state.set_state(AdminStates.waiting_for_lsn_content)
-    await message.answer("Step 3: **UPLOAD CONTENT** (Video, File, Photo, or Link):")
+    await message.answer("Step 3:  **UPLOAD CONTENT**  (Video, File, Photo, or Link):")
 
 
 @dp.message(AdminStates.waiting_for_lsn_content)
@@ -281,7 +281,7 @@ async def admin_save_lsn_content(message: types.Message, state: FSMContext):
 
     update_lesson_content(data['lsn_id'], content_id, content_type)
     await state.clear()
-    await message.answer(f"✅ Lesson Saved as {content_type.upper()}!", reply_markup=admin_main_keyboard())
+    await message.answer(f"✅ Lesson Saved as  **{content_type.upper()}** !", reply_markup=admin_main_keyboard())
 
 
 # MEDIA BROADCAST
@@ -313,7 +313,7 @@ async def process_smart_broadcast(message: types.Message, state: FSMContext):
 async def show_stats(callback: types.CallbackQuery):
     u_count, l_count = get_stats()
     await callback.answer()
-    await callback.message.answer(f"📊 **Bot Stats**\n\nTotal Users: {u_count}\nTotal Lessons: {l_count}",
+    await callback.message.answer(f"📊  **Bot Stats** \n\nTotal Users: {u_count}\nTotal Lessons: {l_count}",
                                   parse_mode="Markdown")
 
 
@@ -454,7 +454,7 @@ async def process_feedback(message: types.Message, state: FSMContext):
         try:
             await message.forward(chat_id=admin_id)
             await bot.send_message(admin_id,
-                                   f"📩 **Feedback** from: {message.from_user.full_name}\nID: `{message.from_user.id}`",
+                                   f"📩  **Feedback**  from: {message.from_user.full_name}\nID: `{message.from_user.id}`",
                                    parse_mode="Markdown")
         except Exception:
             pass
@@ -620,7 +620,7 @@ async def cmd_invite(callback: types.CallbackQuery):
     current_progress, passes = get_user_rewards(callback.from_user.id)
     bot_info = await bot.get_me()
     link = f"https://t.me/{bot_info.username}?start={callback.from_user.id}"
-    msg = f"👥 **Referral Program**\nInvited: {total_invited}\nProgress: {current_progress}/5\nPasses: 🎫 **{passes}**\nLink: `{link}`"
+    msg = f"👥 **Referral Program**\nInvited: {total_invited}\nProgress: {current_progress}/5\nPasses: 🎫  **{passes}** \nLink: `{link}`"
     try:
         await callback.message.edit_text(msg, parse_mode="Markdown", reply_markup=main_menu_keyboard())
     except TelegramBadRequest:
