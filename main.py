@@ -512,26 +512,63 @@ async def show_lessons_handler(callback: types.CallbackQuery):
 async def ask_for_lesson_code(callback: types.CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
 
-    # SAFETY: Register user if they aren't in the new DB yet
-    from db import add_user
+    # 1. SAFETY: Register user if they aren't in the new DB yet (e.g. after server restart)
     add_user(user_id)
 
     lesson_id = int(callback.data.split("_")[1])
-    details = get_lesson_details(lesson_id)
+    details = get_lesson_details(lesson_id)  # Returns (name, code, content_id, content_type)
 
-    # 1. Check Unlocked
+    if not details:
+        await callback.answer("❌ Lesson data not found.")
+        return
+
+    # 2. Check if the user ALREADY unlocked this lesson
     if is_lesson_unlocked(user_id, lesson_id):
-        await callback.answer()
+        await callback.answer("Opening unlocked lesson...")
+        # Use our helper to send whatever type of content it is
         await send_lesson_content(callback.message, details[2], details[3], f"✅ {details[0]}")
         return
 
-    # 2. Check for Free Pass
-    from db import get_user_rewards
-    # Now this will return (0, 0) instead of None, so it won't crash!
+    # 3. Check if the user is currently LOCKED OUT (15-minute cooldown)
+    lockout_timestamp = get_user_lockout(user_id)
+    if time.time() < lockout_timestamp:
+        remaining_seconds = int(lockout_timestamp - time.time())
+        minutes = remaining_seconds // 60
+        await callback.answer(f"⏳ You are locked out! Try again in {minutes}m.", show_alert=True)
+        return
+
+    # 4. Check if the user has a "Free Pass" to show the special button
     _, passes = get_user_rewards(user_id)
 
-    # ... rest of your code ...
+    builder = InlineKeyboardBuilder()
+    if passes > 0:
+        # Add the button to use a pass
+        builder.row(types.InlineKeyboardButton(
+            text=f"🎫 Use Free Pass ({passes} left)",
+            callback_data=f"use_pass_{lesson_id}")
+        )
 
+    # Always add a back button
+    builder.row(types.InlineKeyboardButton(text="⬅️ Back to Materials", callback_data="all_materials"))
+
+    # 5. Prepare the FSM State to receive the code
+    await callback.answer()
+    await state.update_data(
+        lesson_id=lesson_id,
+        correct_code=details[1],
+        lesson_name=details[0],
+        content_id=details[2],
+        content_type=details[3],
+        attempts=0
+    )
+    await state.set_state(LessonStates.waiting_for_code)
+
+    await callback.message.answer(
+        f"🔒 **{details[0]}** is currently locked.\n\n"
+        "Please enter the access code or use a Free Pass to unlock the content:",
+        reply_markup=builder.as_markup(),
+        parse_mode="Markdown"
+    )
 @dp.callback_query(F.data.startswith("use_pass_"))
 async def process_use_pass(callback: types.CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
